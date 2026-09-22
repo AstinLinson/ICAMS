@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crowd Management Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <header>
+        <h1>Crowd Management System</h1>
+        <button id="demoToggle" class="demo-toggle">Demo Mode: OFF</button>
+    </header>
+    <main>
+        <section class="system-info">
+            <h2>System Information</h2>
+            <ul>
+                <li>ESP32‑S3 → HTTP</li>
+                <li>Backend → Node.js (port 3000)</li>
+                <li>Update Interval → 2 seconds</li>
+            </ul>
+        </section>
+        <section class="status">
+            <h2>Connection Status</h2>
+            <p>Backend: <span id="backendStatus" class="badge online">ONLINE</span></p>
+            <p>ESP32: <span id="espStatus" class="badge offline">DISCONNECTED</span></p>
+        </section>
+        <section class="live-data">
+            <h2>Live Data</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Crowd Count</h3>
+                    <p id="crowdCount" class="value large">-</p>
+                </div>
+                <div class="card">
+                    <h3>Crowd Status</h3>
+                    <p id="crowdStatus" class="badge neutral">-</p>
+                </div>
+                <div class="card">
+                    <h3>Gate Status</h3>
+                    <p id="gateStatus" class="badge neutral">-</p>
+                </div>
+                <div class="card">
+                    <h3>Weight</h3>
+                    <p id="weight" class="value">- g <span class="note">DEMO / FAKE VALUE</span></p>
+                </div>
+                <div class="card">
+                    <h3>Distance</h3>
+                    <p id="distance" class="value">-</p>
+                </div>
+                <div class="card">
+                    <h3>FSR 402</h3>
+                    <p id="fsr" class="value">-</p>
+                </div>
+                <div class="card">
+                    <h3>IR Sensor</h3>
+                    <p id="ir" class="value">-</p>
+                </div>
+                <div class="card">
+                    <h3>MPU6050</h3>
+                    <p id="mpu" class="value">- <span class="note">DEMO / FAKE VALUE</span></p>
+                </div>
+                <div class="card wide">
+                    <h3>Last Updated</h3>
+                    <p id="lastUpdated" class="value">-</p>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
