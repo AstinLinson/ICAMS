@@ -44,14 +44,31 @@
                     </div>
                 </div>
 
-                <button id="demoToggle" class="demo-toggle" title="Toggle Simulation Feed">
-                    <span class="toggle-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                    </span>
-                    <span id="demoToggleText">Demo Mode: OFF</span>
-                </button>
+                    <button id="voiceTestBtn" class="voice-btn" title="Test Public Address Voice System">
+                        <span class="toggle-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                        </span>
+                        <span>Test Voice Alert</span>
+                    </button>
+
+                    <button id="demoToggle" class="demo-toggle" title="Toggle Simulation Feed">
+                        <span class="toggle-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        </span>
+                        <span id="demoToggleText">Demo Mode: OFF</span>
+                    </button>
+                </div>
             </div>
         </header>
+
+        <!-- Emergency Voice Broadcast Alert Banner -->
+        <div id="paAlertBanner" class="pa-banner" style="display: none;">
+            <div class="pa-pulse-dot"></div>
+            <div class="pa-content">
+                <span class="pa-tag">AUTOMATED PUBLIC ADDRESS (PA) BROADCAST</span>
+                <span class="pa-message">"Exit 1 is crowded, so everybody please use Exit 2."</span>
+            </div>
+        </div>
 
         <!-- Interactive Simulation Controller (Active in Demo Mode) -->
         <section id="demoControlPanel" class="demo-panel" style="display: none;">

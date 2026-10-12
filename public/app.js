@@ -45,6 +45,11 @@ const elems = {
   demoToggle: document.getElementById('demoToggle'),
   demoToggleText: document.getElementById('demoToggleText'),
 
+  // Voice Announcement System
+  voiceTestBtn: document.getElementById('voiceTestBtn'),
+  paAlertBanner: document.getElementById('paAlertBanner'),
+  paAlertBannerTimeout: null,
+
   // Simulation Controls
   simCrowd: document.getElementById('simCrowd'),
   simCrowdVal: document.getElementById('simCrowdVal'),
@@ -65,6 +70,44 @@ const elems = {
   presetWarning: document.getElementById('presetWarning'),
   presetDanger: document.getElementById('presetDanger')
 };
+
+// ===================================================================
+// Voice Announcement System (Web Speech API)
+// ===================================================================
+let lastVoiceBroadcastTime = 0;
+const VOICE_COOLDOWN_MS = 12000; // Broadcast at most once every 12 seconds while in danger
+
+function speakAnnouncement(forced = false) {
+  if (!('speechSynthesis' in window)) return;
+  const now = Date.now();
+  if (!forced && (now - lastVoiceBroadcastTime < VOICE_COOLDOWN_MS)) return;
+  lastVoiceBroadcastTime = now;
+
+  // Show emergency broadcast banner
+  if (elems.paAlertBanner) {
+    elems.paAlertBanner.style.display = 'flex';
+    clearTimeout(elems.paAlertBannerTimeout);
+    elems.paAlertBannerTimeout = setTimeout(() => {
+      elems.paAlertBanner.style.display = 'none';
+    }, 7000);
+  }
+
+  // Cancel any ongoing speech so the announcement plays immediately
+  window.speechSynthesis.cancel();
+
+  const phrase = "Exit 1 is crowded, so everybody please use Exit 2.";
+  const utterance = new SpeechSynthesisUtterance(phrase);
+  utterance.rate = 0.95; // Authoritative, crisp Public Address pace
+  utterance.pitch = 1.0;
+  utterance.volume = 1.0;
+
+  // Prefer English locale voice if available
+  const voices = window.speechSynthesis.getVoices();
+  const enVoice = voices.find(v => v.lang.startsWith('en'));
+  if (enVoice) utterance.voice = enVoice;
+
+  window.speechSynthesis.speak(utterance);
+}
 
 // Compute status flags from simulated data (Rule: No danger until FSR > 1000)
 function getSimulatedPayload() {
@@ -235,6 +278,11 @@ function updateUI(data) {
     elems.lastUpdated.textContent = dateObj.toLocaleTimeString();
   } else {
     elems.lastUpdated.textContent = '-';
+  }
+
+  // 12. Public Address Voice Alert Trigger (when Danger / FSR > 1000)
+  if (source.crowdStatus === 'DANGER' || Number(source.fsr) > 1000) {
+    speakAnnouncement(false);
   }
 }
 
@@ -415,6 +463,13 @@ function setupSimulationListeners() {
   if (elems.presetSafe) elems.presetSafe.addEventListener('click', () => applyPreset('safe'));
   if (elems.presetWarning) elems.presetWarning.addEventListener('click', () => applyPreset('warning'));
   if (elems.presetDanger) elems.presetDanger.addEventListener('click', () => applyPreset('danger'));
+
+  // 9. Manual Voice Test Trigger
+  if (elems.voiceTestBtn) {
+    elems.voiceTestBtn.addEventListener('click', () => {
+      speakAnnouncement(true);
+    });
+  }
 }
 
 // Toggle Demo Mode Switch
