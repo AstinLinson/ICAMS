@@ -140,15 +140,15 @@ function speakAnnouncement(phrase, forced = false) {
 }
 
 // Multi-sensor Voice Logic:
-// 1. FSR > 1000 & IR DETECTED -> "Exit 1 is crowded and the crowd is moving down, so everybody please use Exit 2."
-// 2. FSR > 1000 & IR NOT DETECTED -> "The crowd is not moving, and it is very crowded as well there, so everybody please use Exit 2."
-// 3. FSR <= 1000 & IR DETECTED -> QUIET
-// 4. FSR <= 1000 & IR NOT DETECTED -> QUIET
+// 1. FSR > 200 & IR DETECTED -> "Exit 1 is crowded and the crowd is moving down, so everybody please use Exit 2."
+// 2. FSR > 200 & IR NOT DETECTED -> "The crowd is not moving, and it is very crowded as well there, so everybody please use Exit 2."
+// 3. FSR <= 200 & IR DETECTED -> QUIET
+// 4. FSR <= 200 & IR NOT DETECTED -> QUIET
 function handleCrowdVoiceLogic(fsrVal, isIrDetected) {
   let currentCase = null;
   let phrase = null;
 
-  if (fsrVal > 1000) {
+  if (fsrVal > 200) {
     if (isIrDetected) {
       // Case 1: High pressure on Exit 1, crowd actively moving across IR beam
       currentCase = 'CASE_1_MOVING';
@@ -159,7 +159,7 @@ function handleCrowdVoiceLogic(fsrVal, isIrDetected) {
       phrase = "The crowd is not moving, and it is very crowded as well there, so everybody please use Exit 2.";
     }
   } else {
-    // Case 3 & 4: FSR <= 1000 -> Completely QUIET
+    // Case 3 & 4: FSR <= 200 -> Completely QUIET
     currentCase = 'QUIET';
     lastAnnouncedCase = null;
     return;
@@ -177,14 +177,14 @@ function handleCrowdVoiceLogic(fsrVal, isIrDetected) {
   }
 }
 
-// Compute status flags from simulated data (Rule: No danger until FSR > 1000)
+// Compute status flags from simulated data (Rule: No danger until FSR > 200)
 function getSimulatedPayload() {
   const crowd = simState.crowd;
   const fsr = simState.fsr;
 
   let crowdStatus = 'SAFE';
-  // Show no danger until FSR reaches above 1000
-  if (fsr > 1000) {
+  // Show no danger until FSR reaches above 200
+  if (fsr > 200) {
     crowdStatus = 'DANGER';
   } else if (crowd >= 5) {
     crowdStatus = 'WARNING';
@@ -222,12 +222,12 @@ function updateCrowdBadge(element, status, crowd, fsr) {
   } else if (upper === 'WARNING') {
     element.classList.add('warning');
     if (elems.crowdStatusDesc) {
-      elems.crowdStatusDesc.textContent = 'High density detected. FSR is ≤ 1000 — gate remains open.';
+      elems.crowdStatusDesc.textContent = 'High density detected. FSR is ≤ 200 — gate remains open.';
     }
   } else if (upper === 'DANGER') {
     element.classList.add('danger');
     if (elems.crowdStatusDesc) {
-      elems.crowdStatusDesc.textContent = 'CRITICAL FORCE: FSR exceeded 1000 threshold. Barrier locked.';
+      elems.crowdStatusDesc.textContent = 'CRITICAL FORCE: FSR exceeded 200 threshold. Barrier locked.';
     }
   } else {
     element.classList.add('safe');
