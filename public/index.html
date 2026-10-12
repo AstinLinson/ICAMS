@@ -53,6 +53,95 @@
             </div>
         </header>
 
+        <!-- Interactive Simulation Controller (Active in Demo Mode) -->
+        <section id="demoControlPanel" class="demo-panel" style="display: none;">
+            <div class="demo-panel-header">
+                <div class="demo-panel-title">
+                    <span class="sim-badge">INTERACTIVE SIMULATION SUITE</span>
+                    <h3>Live Value Overrides</h3>
+                    <p>Adjust any sensor parameter below to demonstrate how the automated crowd control & gate barrier react in real time.</p>
+                </div>
+                <div class="preset-buttons">
+                    <span class="preset-label">Quick Scenarios:</span>
+                    <button type="button" class="preset-btn" id="presetSafe">🟢 Normal / Safe</button>
+                    <button type="button" class="preset-btn" id="presetWarning">🟡 High Density</button>
+                    <button type="button" class="preset-btn" id="presetDanger">🔴 Critical Lockdown</button>
+                </div>
+            </div>
+
+            <div class="demo-controls-grid">
+                <!-- Crowd Count Slider -->
+                <div class="sim-control-card">
+                    <div class="sim-control-top">
+                        <label for="simCrowd">Crowd Count (Persons)</label>
+                        <span id="simCrowdVal" class="sim-val-pill">7</span>
+                    </div>
+                    <input type="range" id="simCrowd" min="0" max="25" value="7" class="sim-slider" />
+                    <div class="sim-hint">Safe: 0–4 | Warning: 5–9 | Danger: 10+</div>
+                </div>
+
+                <!-- FSR 402 Pressure -->
+                <div class="sim-control-card">
+                    <div class="sim-control-top">
+                        <label for="simFsr">FSR 402 Pressure (ADC)</label>
+                        <span id="simFsrVal" class="sim-val-pill">650</span>
+                    </div>
+                    <input type="range" id="simFsr" min="0" max="4095" value="650" step="25" class="sim-slider" />
+                    <div class="sim-hint">0 = No contact | 4095 = Maximum Force</div>
+                </div>
+
+                <!-- Ultrasonic Distance -->
+                <div class="sim-control-card">
+                    <div class="sim-control-top">
+                        <label for="simDistance">Ultrasonic Distance (cm)</label>
+                        <span id="simDistanceVal" class="sim-val-pill">35 cm</span>
+                    </div>
+                    <input type="range" id="simDistance" min="-1" max="200" value="35" class="sim-slider" />
+                    <div class="sim-toggle-row">
+                        <button type="button" class="sim-mini-btn" id="btnNoEcho">Set "No Echo" (-1)</button>
+                    </div>
+                </div>
+
+                <!-- IR Sensor State -->
+                <div class="sim-control-card">
+                    <div class="sim-control-top">
+                        <label>IR Optical Beam (GPIO 4)</label>
+                        <span id="simIrVal" class="sim-val-pill">CLEAR</span>
+                    </div>
+                    <div class="sim-btn-group">
+                        <button type="button" class="sim-choice-btn active" id="btnIrClear">CLEAR</button>
+                        <button type="button" class="sim-choice-btn" id="btnIrDetected">DETECTED</button>
+                    </div>
+                    <div class="sim-hint">Simulate entry passage beam-break</div>
+                </div>
+
+                <!-- Platform Weight -->
+                <div class="sim-control-card">
+                    <div class="sim-control-top">
+                        <label for="simWeight">Platform Weight (g)</label>
+                        <span id="simWeightVal" class="sim-val-pill">5300 g</span>
+                    </div>
+                    <input type="range" id="simWeight" min="0" max="10000" step="100" value="5300" class="sim-slider" />
+                    <div class="sim-hint">Load cell weight simulation</div>
+                </div>
+
+                <!-- MPU6050 Status -->
+                <div class="sim-control-card">
+                    <div class="sim-control-top">
+                        <label for="simMpu">MPU6050 Motion / IMU</label>
+                    </div>
+                    <select id="simMpu" class="sim-select">
+                        <option value="Stable" selected>Stable</option>
+                        <option value="Motion Detected">Motion Detected</option>
+                        <option value="Vibration Alert">Vibration Alert</option>
+                        <option value="Tilt Triggered">Tilt Triggered</option>
+                        <option value="ERROR">ERROR</option>
+                    </select>
+                    <div class="sim-hint">Inertial telemetry condition</div>
+                </div>
+            </div>
+        </section>
+
         <!-- Main Dashboard View -->
         <main class="dashboard-content">
             <!-- Hero Row: Core Operational Directives -->

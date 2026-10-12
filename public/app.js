@@ -1,8 +1,18 @@
-// app.js - Enhanced Frontend logic for Crowd Management Dashboard
+// app.js - Enhanced Frontend logic for Crowd Management Dashboard with Interactive Simulation
 
 const apiUrl = '/api/sensor-data';
 const pollInterval = 2000; // 2 seconds
 let demoMode = false;
+
+// Simulated State (modifiable in Demo Mode)
+const simState = {
+  crowd: 7,
+  fsr: 650,
+  distance: 35,
+  ir: 'CLEAR',
+  weight: 5300,
+  mpu: 'Stable'
+};
 
 // DOM Element Registry
 const elems = {
@@ -28,10 +38,53 @@ const elems = {
   ir: document.getElementById('ir'),
   irIndicator: document.getElementById('irIndicator'),
   mpu: document.getElementById('mpu'),
-  lastUpdated: document.getElementById('lastUpdated')
+  lastUpdated: document.getElementById('lastUpdated'),
+
+  // Demo Control Panel
+  demoControlPanel: document.getElementById('demoControlPanel'),
+  demoToggle: document.getElementById('demoToggle'),
+  demoToggleText: document.getElementById('demoToggleText'),
+
+  // Simulation Controls
+  simCrowd: document.getElementById('simCrowd'),
+  simCrowdVal: document.getElementById('simCrowdVal'),
+  simFsr: document.getElementById('simFsr'),
+  simFsrVal: document.getElementById('simFsrVal'),
+  simDistance: document.getElementById('simDistance'),
+  simDistanceVal: document.getElementById('simDistanceVal'),
+  btnNoEcho: document.getElementById('btnNoEcho'),
+  simIrVal: document.getElementById('simIrVal'),
+  btnIrClear: document.getElementById('btnIrClear'),
+  btnIrDetected: document.getElementById('btnIrDetected'),
+  simWeight: document.getElementById('simWeight'),
+  simWeightVal: document.getElementById('simWeightVal'),
+  simMpu: document.getElementById('simMpu'),
+
+  // Preset Buttons
+  presetSafe: document.getElementById('presetSafe'),
+  presetWarning: document.getElementById('presetWarning'),
+  presetDanger: document.getElementById('presetDanger')
 };
 
-// Set pill status badges & accompanying contextual descriptions
+// Compute status flags from simulated data
+function getSimulatedPayload() {
+  const crowd = simState.crowd;
+  let crowdStatus = 'SAFE';
+  if (crowd >= 10) crowdStatus = 'DANGER';
+  else if (crowd >= 5) crowdStatus = 'WARNING';
+
+  const gateStatus = (crowdStatus === 'DANGER') ? 'CLOSED' : 'OPEN';
+
+  return {
+    ...simState,
+    crowdStatus,
+    gateStatus,
+    espConnected: true,
+    lastUpdated: new Date().toISOString()
+  };
+}
+
+// Set status badges & descriptions
 function updateCrowdBadge(element, status, crowd) {
   element.className = 'badge status-pill';
   if (!status) {
@@ -105,24 +158,14 @@ function updateUI(data) {
     if (elems.espDot) elems.espDot.className = 'pill-dot offline';
   }
 
-  // 3. Resolve active data source (live ESP32 feed or simulated demo mode)
-  const source = demoMode ? {
-    crowd: 47,
-    weight: 5300,
-    distance: 34,
-    fsr: 350,
-    ir: 'DETECTED',
-    mpu: 'Stable',
-    crowdStatus: 'WARNING',
-    gateStatus: 'OPEN',
-    lastUpdated: new Date().toISOString()
-  } : data;
+  // 3. Resolve active source: In Demo Mode, use interactive simState; otherwise use real ESP32 feed
+  const source = demoMode ? getSimulatedPayload() : data;
 
   // 4. Crowd Count & Density Meter
   const crowdVal = source.crowd !== null && source.crowd !== undefined ? source.crowd : 0;
   elems.crowdCount.textContent = crowdVal;
 
-  const maxCapacity = 15; // Benchmark capacity scale
+  const maxCapacity = 15;
   const percent = Math.min(100, Math.round((crowdVal / maxCapacity) * 100));
   if (elems.capacityPercent) elems.capacityPercent.textContent = `${percent}%`;
   if (elems.capacityFill) {
@@ -188,18 +231,23 @@ function updateUI(data) {
 }
 
 function fetchData() {
+  if (demoMode) {
+    // In Demo Mode, render user-controlled simulated values immediately
+    updateUI(getSimulatedPayload());
+    return;
+  }
+
   fetch(apiUrl)
     .then(res => {
-      if (res.status === 204) return null; // No data yet
+      if (res.status === 204) return null;
       return res.json();
     })
     .then(data => {
-      if (data) {
+      if (data && !demoMode) {
         updateUI(data);
       }
     })
     .catch(err => {
-      // Backend unreachable – show offline badge
       if (elems.backendStatus) {
         elems.backendStatus.className = 'badge offline';
         elems.backendStatus.textContent = 'OFFLINE';
@@ -217,29 +265,175 @@ function fetchData() {
     });
 }
 
-// Demo mode toggle button handler
-const demoBtn = document.getElementById('demoToggle');
-const demoText = document.getElementById('demoToggleText');
-
-function updateDemoButton() {
-  if (demoMode) {
-    demoBtn.classList.add('active');
-    if (demoText) demoText.textContent = 'Demo Mode: ON';
-  } else {
-    demoBtn.classList.remove('active');
-    if (demoText) demoText.textContent = 'Demo Mode: OFF';
+// Synchronize simulation control inputs with current simState
+function syncSimControlsToUI() {
+  if (elems.simCrowd) {
+    elems.simCrowd.value = simState.crowd;
+    elems.simCrowdVal.textContent = simState.crowd;
+  }
+  if (elems.simFsr) {
+    elems.simFsr.value = simState.fsr;
+    elems.simFsrVal.textContent = simState.fsr;
+  }
+  if (elems.simDistance) {
+    elems.simDistance.value = simState.distance;
+    elems.simDistanceVal.textContent = simState.distance === -1 ? 'No Echo (-1)' : `${simState.distance} cm`;
+  }
+  if (elems.simIrVal) {
+    elems.simIrVal.textContent = simState.ir;
+    if (simState.ir === 'CLEAR') {
+      elems.btnIrClear.classList.add('active');
+      elems.btnIrDetected.classList.remove('active');
+    } else {
+      elems.btnIrClear.classList.remove('active');
+      elems.btnIrDetected.classList.add('active');
+    }
+  }
+  if (elems.simWeight) {
+    elems.simWeight.value = simState.weight;
+    elems.simWeightVal.textContent = `${simState.weight} g`;
+  }
+  if (elems.simMpu) {
+    elems.simMpu.value = simState.mpu;
   }
 }
 
-if (demoBtn) {
-  demoBtn.addEventListener('click', () => {
+// Apply scenario presets
+function applyPreset(preset) {
+  if (preset === 'safe') {
+    simState.crowd = 2;
+    simState.fsr = 180;
+    simState.distance = 85;
+    simState.ir = 'CLEAR';
+    simState.weight = 4600;
+    simState.mpu = 'Stable';
+  } else if (preset === 'warning') {
+    simState.crowd = 7;
+    simState.fsr = 850;
+    simState.distance = 28;
+    simState.ir = 'DETECTED';
+    simState.weight = 5300;
+    simState.mpu = 'Motion Detected';
+  } else if (preset === 'danger') {
+    simState.crowd = 14;
+    simState.fsr = 2600;
+    simState.distance = 10;
+    simState.ir = 'DETECTED';
+    simState.weight = 7400;
+    simState.mpu = 'Vibration Alert';
+  }
+  syncSimControlsToUI();
+  updateUI(getSimulatedPayload());
+}
+
+// Bind Interactive Simulation Inputs
+function setupSimulationListeners() {
+  // 1. Crowd slider
+  if (elems.simCrowd) {
+    elems.simCrowd.addEventListener('input', (e) => {
+      simState.crowd = parseInt(e.target.value, 10);
+      elems.simCrowdVal.textContent = simState.crowd;
+      updateUI(getSimulatedPayload());
+    });
+  }
+
+  // 2. FSR slider
+  if (elems.simFsr) {
+    elems.simFsr.addEventListener('input', (e) => {
+      simState.fsr = parseInt(e.target.value, 10);
+      elems.simFsrVal.textContent = simState.fsr;
+      updateUI(getSimulatedPayload());
+    });
+  }
+
+  // 3. Distance slider
+  if (elems.simDistance) {
+    elems.simDistance.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      simState.distance = val;
+      elems.simDistanceVal.textContent = val === -1 ? 'No Echo (-1)' : `${val} cm`;
+      updateUI(getSimulatedPayload());
+    });
+  }
+
+  // 4. "No Echo" Button
+  if (elems.btnNoEcho) {
+    elems.btnNoEcho.addEventListener('click', () => {
+      simState.distance = -1;
+      elems.simDistance.value = -1;
+      elems.simDistanceVal.textContent = 'No Echo (-1)';
+      updateUI(getSimulatedPayload());
+    });
+  }
+
+  // 5. IR Clear / Detected buttons
+  if (elems.btnIrClear) {
+    elems.btnIrClear.addEventListener('click', () => {
+      simState.ir = 'CLEAR';
+      elems.simIrVal.textContent = 'CLEAR';
+      elems.btnIrClear.classList.add('active');
+      elems.btnIrDetected.classList.remove('active');
+      updateUI(getSimulatedPayload());
+    });
+  }
+  if (elems.btnIrDetected) {
+    elems.btnIrDetected.addEventListener('click', () => {
+      simState.ir = 'DETECTED';
+      elems.simIrVal.textContent = 'DETECTED';
+      elems.btnIrDetected.classList.add('active');
+      elems.btnIrClear.classList.remove('active');
+      updateUI(getSimulatedPayload());
+    });
+  }
+
+  // 6. Weight slider
+  if (elems.simWeight) {
+    elems.simWeight.addEventListener('input', (e) => {
+      simState.weight = parseInt(e.target.value, 10);
+      elems.simWeightVal.textContent = `${simState.weight} g`;
+      updateUI(getSimulatedPayload());
+    });
+  }
+
+  // 7. MPU select
+  if (elems.simMpu) {
+    elems.simMpu.addEventListener('change', (e) => {
+      simState.mpu = e.target.value;
+      updateUI(getSimulatedPayload());
+    });
+  }
+
+  // 8. Scenario Presets
+  if (elems.presetSafe) elems.presetSafe.addEventListener('click', () => applyPreset('safe'));
+  if (elems.presetWarning) elems.presetWarning.addEventListener('click', () => applyPreset('warning'));
+  if (elems.presetDanger) elems.presetDanger.addEventListener('click', () => applyPreset('danger'));
+}
+
+// Toggle Demo Mode Switch
+function updateDemoButton() {
+  if (demoMode) {
+    elems.demoToggle.classList.add('active');
+    if (elems.demoToggleText) elems.demoToggleText.textContent = 'Demo Mode: ON';
+    if (elems.demoControlPanel) elems.demoControlPanel.style.display = 'block';
+    syncSimControlsToUI();
+    updateUI(getSimulatedPayload());
+  } else {
+    elems.demoToggle.classList.remove('active');
+    if (elems.demoToggleText) elems.demoToggleText.textContent = 'Demo Mode: OFF';
+    if (elems.demoControlPanel) elems.demoControlPanel.style.display = 'none';
+    fetchData(); // Return immediately to real ESP32 stream
+  }
+}
+
+if (elems.demoToggle) {
+  elems.demoToggle.addEventListener('click', () => {
     demoMode = !demoMode;
     updateDemoButton();
-    fetchData(); // Force immediate UI update
   });
 }
 
-// Initial Load
+// Setup & Initialization
+setupSimulationListeners();
 updateDemoButton();
 fetchData();
 setInterval(fetchData, pollInterval);
