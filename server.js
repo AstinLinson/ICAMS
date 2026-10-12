@@ -17,14 +17,22 @@ app.use(express.static(path.join(__dirname, 'public')));
 let latestData = null; // raw payload from ESP32
 let lastTimestamp = null; // timestamp of last POST
 
-// Helper to compute status values based on crowd count
+// Helper to compute status values based on crowd count and FSR pressure threshold
 function computeStatus(data) {
-  const crowd = data.crowd ?? 0;
-  let crowdStatus = 'SAFE';
-  if (crowd >= 10) crowdStatus = 'DANGER';
-  else if (crowd >= 5) crowdStatus = 'WARNING';
+  const crowd = Number(data.crowd ?? 0);
+  const fsr = Number(data.fsr ?? 0);
 
-  const gateStatus = (crowdStatus === 'SAFE' || crowdStatus === 'WARNING') ? 'OPEN' : 'CLOSED';
+  let crowdStatus = 'SAFE';
+  // Show no danger until FSR reaches above 1000
+  if (fsr > 1000) {
+    crowdStatus = 'DANGER';
+  } else if (crowd >= 5) {
+    crowdStatus = 'WARNING';
+  } else {
+    crowdStatus = 'SAFE';
+  }
+
+  const gateStatus = (crowdStatus === 'DANGER') ? 'CLOSED' : 'OPEN';
   const espConnected = lastTimestamp && (Date.now() - lastTimestamp) <= 5000; // 5 s stale threshold
 
   return { crowdStatus, gateStatus, espConnected };

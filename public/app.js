@@ -66,12 +66,20 @@ const elems = {
   presetDanger: document.getElementById('presetDanger')
 };
 
-// Compute status flags from simulated data
+// Compute status flags from simulated data (Rule: No danger until FSR > 1000)
 function getSimulatedPayload() {
   const crowd = simState.crowd;
+  const fsr = simState.fsr;
+
   let crowdStatus = 'SAFE';
-  if (crowd >= 10) crowdStatus = 'DANGER';
-  else if (crowd >= 5) crowdStatus = 'WARNING';
+  // Show no danger until FSR reaches above 1000
+  if (fsr > 1000) {
+    crowdStatus = 'DANGER';
+  } else if (crowd >= 5) {
+    crowdStatus = 'WARNING';
+  } else {
+    crowdStatus = 'SAFE';
+  }
 
   const gateStatus = (crowdStatus === 'DANGER') ? 'CLOSED' : 'OPEN';
 
@@ -85,7 +93,7 @@ function getSimulatedPayload() {
 }
 
 // Set status badges & descriptions
-function updateCrowdBadge(element, status, crowd) {
+function updateCrowdBadge(element, status, crowd, fsr) {
   element.className = 'badge status-pill';
   if (!status) {
     element.textContent = '-';
@@ -98,17 +106,17 @@ function updateCrowdBadge(element, status, crowd) {
   if (upper === 'SAFE') {
     element.classList.add('safe');
     if (elems.crowdStatusDesc) {
-      elems.crowdStatusDesc.textContent = 'Facility occupancy is within safe parameters.';
+      elems.crowdStatusDesc.textContent = 'Facility occupancy and surface pressure are normal.';
     }
   } else if (upper === 'WARNING') {
     element.classList.add('warning');
     if (elems.crowdStatusDesc) {
-      elems.crowdStatusDesc.textContent = 'High density detected. Approach threshold caution.';
+      elems.crowdStatusDesc.textContent = 'High density detected. FSR is ≤ 1000 — gate remains open.';
     }
   } else if (upper === 'DANGER') {
     element.classList.add('danger');
     if (elems.crowdStatusDesc) {
-      elems.crowdStatusDesc.textContent = 'CRITICAL OVERCROWDING: Turnstile locking engaged.';
+      elems.crowdStatusDesc.textContent = 'CRITICAL FORCE: FSR exceeded 1000 threshold. Barrier locked.';
     }
   } else {
     element.classList.add('safe');
@@ -171,9 +179,9 @@ function updateUI(data) {
   if (elems.capacityFill) {
     elems.capacityFill.style.width = `${percent}%`;
     elems.capacityFill.className = 'progress-fill';
-    if (crowdVal >= 10) {
+    if (source.crowdStatus === 'DANGER') {
       elems.capacityFill.classList.add('danger');
-    } else if (crowdVal >= 5) {
+    } else if (source.crowdStatus === 'WARNING') {
       elems.capacityFill.classList.add('warning');
     } else {
       elems.capacityFill.classList.add('safe');
@@ -181,7 +189,7 @@ function updateUI(data) {
   }
 
   // 5. Crowd & Gate Operational Status Badges
-  updateCrowdBadge(elems.crowdStatus, source.crowdStatus, crowdVal);
+  updateCrowdBadge(elems.crowdStatus, source.crowdStatus, crowdVal, source.fsr);
   updateGateBadge(elems.gateStatus, source.gateStatus);
 
   // 6. Weight Platform
