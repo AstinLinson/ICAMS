@@ -39,6 +39,14 @@ app.post('/api/sensor-data', (req, res) => {
   if (missing.length) {
     return res.status(400).json({ error: 'Missing fields', missing });
   }
+
+  // Correct inverted IR sensor logic (Active HIGH vs LOW hardware variance)
+  if (payload.ir === 'DETECTED') {
+    payload.ir = 'CLEAR';
+  } else if (payload.ir === 'CLEAR') {
+    payload.ir = 'DETECTED';
+  }
+
   latestData = payload;
   lastTimestamp = Date.now();
   res.json({ status: 'ok' });
