@@ -77,11 +77,19 @@ const elems = {
 let lastVoiceBroadcastTime = 0;
 const VOICE_COOLDOWN_MS = 12000; // Broadcast at most once every 12 seconds while in danger
 
-function speakAnnouncement(forced = false) {
+function speakAnnouncement(customPhrase = null, forced = false) {
   if (!('speechSynthesis' in window)) return;
   const now = Date.now();
   if (!forced && (now - lastVoiceBroadcastTime < VOICE_COOLDOWN_MS)) return;
   lastVoiceBroadcastTime = now;
+
+  const phrase = customPhrase || "The crowd is not moving.";
+
+  // Update banner message if present
+  const paMsgElem = document.getElementById('paAlertMessage');
+  if (paMsgElem) {
+    paMsgElem.textContent = `"${phrase}"`;
+  }
 
   // Show emergency broadcast banner
   if (elems.paAlertBanner) {
@@ -95,7 +103,6 @@ function speakAnnouncement(forced = false) {
   // Cancel any ongoing speech so the announcement plays immediately
   window.speechSynthesis.cancel();
 
-  const phrase = "Exit 1 is crowded, so everybody please use Exit 2.";
   const utterance = new SpeechSynthesisUtterance(phrase);
   utterance.rate = 0.95; // Authoritative, crisp Public Address pace
   utterance.pitch = 1.0;
@@ -280,9 +287,16 @@ function updateUI(data) {
     elems.lastUpdated.textContent = '-';
   }
 
-  // 12. Public Address Voice Alert Trigger (when Danger / FSR > 1000)
-  if (source.crowdStatus === 'DANGER' || Number(source.fsr) > 1000) {
-    speakAnnouncement(false);
+  // 12. Public Address Voice Alert Trigger
+  // Rule: When FSR > 1000 and IR is NOT being detected -> Speak "The crowd is not moving."
+  // When IR IS detected while FSR > 1000 -> Say nothing (quiet).
+  const fsrValNum = Number(source.fsr);
+  const isIrDetected = (String(source.ir).toUpperCase() === 'DETECTED');
+
+  if (fsrValNum > 1000) {
+    if (!isIrDetected) {
+      speakAnnouncement("The crowd is not moving.", false);
+    }
   }
 }
 
@@ -467,7 +481,7 @@ function setupSimulationListeners() {
   // 9. Manual Voice Test Trigger
   if (elems.voiceTestBtn) {
     elems.voiceTestBtn.addEventListener('click', () => {
-      speakAnnouncement(true);
+      speakAnnouncement("The crowd is not moving.", true);
     });
   }
 }
