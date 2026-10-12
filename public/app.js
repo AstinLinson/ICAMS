@@ -75,15 +75,11 @@ const elems = {
 // Voice Announcement System (Web Speech API)
 // ===================================================================
 let lastVoiceBroadcastTime = 0;
-const VOICE_COOLDOWN_MS = 12000; // Broadcast at most once every 12 seconds while in danger
+let lastAnnouncedCase = null;
+const VOICE_COOLDOWN_MS = 12000; // Repeat announcement at most once every 12 seconds if condition persists
 
-function speakAnnouncement(customPhrase = null, forced = false) {
+function speakAnnouncement(phrase, forced = false) {
   if (!('speechSynthesis' in window)) return;
-  const now = Date.now();
-  if (!forced && (now - lastVoiceBroadcastTime < VOICE_COOLDOWN_MS)) return;
-  lastVoiceBroadcastTime = now;
-
-  const phrase = customPhrase || "The crowd is not moving.";
 
   // Update banner message if present
   const paMsgElem = document.getElementById('paAlertMessage');
@@ -114,6 +110,41 @@ function speakAnnouncement(customPhrase = null, forced = false) {
   if (enVoice) utterance.voice = enVoice;
 
   window.speechSynthesis.speak(utterance);
+}
+
+// Multi-sensor Voice Logic:
+// 1. FSR > 1000 & IR DETECTED -> "Exit 1 is crowded and the crowd is moving down, so everybody use Exit 2."
+// 2. FSR > 1000 & IR NOT DETECTED -> "The crowd is not moving, and it is very crowded as well there, so everybody use Exit 2."
+// 3. FSR <= 1000 & IR DETECTED -> QUIET
+// 4. FSR <= 1000 & IR NOT DETECTED -> QUIET
+function handleCrowdVoiceLogic(fsrVal, isIrDetected) {
+  let currentCase = null;
+  let phrase = null;
+
+  if (fsrVal > 1000) {
+    if (isIrDetected) {
+      // Case 1: High pressure on Exit 1, crowd actively moving across IR beam
+      currentCase = 'CASE_1_MOVING';
+      phrase = "Exit 1 is crowded and the crowd is moving down, so everybody use Exit 2.";
+    } else {
+      // Case 2: High pressure on Exit 1, NO movement across IR beam (stagnant / jam)
+      currentCase = 'CASE_2_STAGNANT';
+      phrase = "The crowd is not moving, and it is very crowded as well there, so everybody use Exit 2.";
+    }
+  } else {
+    // Case 3 & 4: FSR <= 1000 -> Completely QUIET
+    currentCase = 'QUIET';
+    lastAnnouncedCase = null;
+    return;
+  }
+
+  const now = Date.now();
+  // Announce if new state occurred OR if 12s cooldown has elapsed
+  if (currentCase !== lastAnnouncedCase || (now - lastVoiceBroadcastTime >= VOICE_COOLDOWN_MS)) {
+    lastAnnouncedCase = currentCase;
+    lastVoiceBroadcastTime = now;
+    speakAnnouncement(phrase, true);
+  }
 }
 
 // Compute status flags from simulated data (Rule: No danger until FSR > 1000)
@@ -287,17 +318,11 @@ function updateUI(data) {
     elems.lastUpdated.textContent = '-';
   }
 
-  // 12. Public Address Voice Alert Trigger
-  // Rule: When FSR > 1000 and IR is NOT being detected -> Speak "The crowd is not moving."
-  // When IR IS detected while FSR > 1000 -> Say nothing (quiet).
+  // 12. Public Address Voice Alert Trigger (Multi-Sensor Logic)
   const fsrValNum = Number(source.fsr);
   const isIrDetected = (String(source.ir).toUpperCase() === 'DETECTED');
 
-  if (fsrValNum > 1000) {
-    if (!isIrDetected) {
-      speakAnnouncement("The crowd is not moving.", false);
-    }
-  }
+  handleCrowdVoiceLogic(fsrValNum, isIrDetected);
 }
 
 function fetchData() {
@@ -478,10 +503,16 @@ function setupSimulationListeners() {
   if (elems.presetWarning) elems.presetWarning.addEventListener('click', () => applyPreset('warning'));
   if (elems.presetDanger) elems.presetDanger.addEventListener('click', () => applyPreset('danger'));
 
-  // 9. Manual Voice Test Trigger
+  // 9. Manual Voice Test Trigger (cycles both announcements)
+  let voiceTestToggle = false;
   if (elems.voiceTestBtn) {
     elems.voiceTestBtn.addEventListener('click', () => {
-      speakAnnouncement("The crowd is not moving.", true);
+      voiceTestToggle = !voiceTestToggle;
+      if (voiceTestToggle) {
+        speakAnnouncement("Exit 1 is crowded and the crowd is moving down, so everybody use Exit 2.", true);
+      } else {
+        speakAnnouncement("The crowd is not moving, and it is very crowded as well there, so everybody use Exit 2.", true);
+      }
     });
   }
 }
