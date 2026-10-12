@@ -23,8 +23,8 @@ function computeStatus(data) {
   const fsr = Number(data.fsr ?? 0);
 
   let crowdStatus = 'SAFE';
-  // Show no danger until FSR reaches above 200
-  if (fsr > 200) {
+  // Show no danger until FSR reaches above 2000
+  if (fsr > 2000) {
     crowdStatus = 'DANGER';
   } else if (crowd >= 5) {
     crowdStatus = 'WARNING';
