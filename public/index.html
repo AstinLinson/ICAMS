@@ -4,71 +4,268 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crowd Management Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    <title>ICAMS • Crowd Intelligence & Gate Control</title>
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <header>
-        <h1>Crowd Management System</h1>
-        <button id="demoToggle" class="demo-toggle">Demo Mode: OFF</button>
-    </header>
-    <main>
-        <section class="system-info">
-            <h2>System Information</h2>
-            <ul>
-                <li>ESP32‑S3 → HTTP</li>
-                <li>Backend → Node.js (port 3000)</li>
-                <li>Update Interval → 2 seconds</li>
-            </ul>
-        </section>
-        <section class="status">
-            <h2>Connection Status</h2>
-            <p>Backend: <span id="backendStatus" class="badge online">ONLINE</span></p>
-            <p>ESP32: <span id="espStatus" class="badge offline">DISCONNECTED</span></p>
-        </section>
-        <section class="live-data">
-            <h2>Live Data</h2>
-            <div class="grid">
-                <div class="card">
-                    <h3>Crowd Count</h3>
-                    <p id="crowdCount" class="value large">-</p>
+    <div class="app-container">
+        <!-- Top Navigation Bar -->
+        <header class="top-nav">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
                 </div>
-                <div class="card">
-                    <h3>Crowd Status</h3>
-                    <p id="crowdStatus" class="badge neutral">-</p>
-                </div>
-                <div class="card">
-                    <h3>Gate Status</h3>
-                    <p id="gateStatus" class="badge neutral">-</p>
-                </div>
-                <div class="card">
-                    <h3>Weight</h3>
-                    <p id="weight" class="value">- g <span class="note">DEMO / FAKE VALUE</span></p>
-                </div>
-                <div class="card">
-                    <h3>Distance</h3>
-                    <p id="distance" class="value">-</p>
-                </div>
-                <div class="card">
-                    <h3>FSR 402</h3>
-                    <p id="fsr" class="value">-</p>
-                </div>
-                <div class="card">
-                    <h3>IR Sensor</h3>
-                    <p id="ir" class="value">-</p>
-                </div>
-                <div class="card">
-                    <h3>MPU6050</h3>
-                    <p id="mpu" class="value">- <span class="note">DEMO / FAKE VALUE</span></p>
-                </div>
-                <div class="card wide">
-                    <h3>Last Updated</h3>
-                    <p id="lastUpdated" class="value">-</p>
+                <div>
+                    <div class="brand-title">ICAMS <span class="version-tag">v2.4 Enterprise</span></div>
+                    <div class="brand-subtitle">Intelligent Crowd Analytics & Edge Gate Control • ESP32-S3</div>
                 </div>
             </div>
-        </section>
-    </main>
+
+            <div class="nav-actions">
+                <div class="connection-pills">
+                    <div class="pill">
+                        <span class="pill-dot" id="backendDot"></span>
+                        <span class="pill-label">SERVER:</span>
+                        <span id="backendStatus" class="badge online">ONLINE</span>
+                    </div>
+                    <div class="pill">
+                        <span class="pill-dot" id="espDot"></span>
+                        <span class="pill-label">ESP32-S3:</span>
+                        <span id="espStatus" class="badge offline">DISCONNECTED</span>
+                    </div>
+                </div>
+
+                <button id="demoToggle" class="demo-toggle" title="Toggle Simulation Feed">
+                    <span class="toggle-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    </span>
+                    <span id="demoToggleText">Demo Mode: OFF</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Dashboard View -->
+        <main class="dashboard-content">
+            <!-- Hero Row: Core Operational Directives -->
+            <section class="hero-grid">
+                <!-- Crowd Count Metric -->
+                <div class="card stat-card primary-stat">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="card-icon crowd-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            </span>
+                            <div>
+                                <h3>Real-time Crowd Count</h3>
+                                <p class="card-meta">Optical IR Sensor Triggered Entry</p>
+                            </div>
+                        </div>
+                        <span class="live-pill">LIVE SENSOR</span>
+                    </div>
+                    <div class="stat-body">
+                        <div class="stat-main">
+                            <span id="crowdCount" class="value large">0</span>
+                            <span class="stat-unit">PERSONS</span>
+                        </div>
+                        <div class="capacity-bar-wrapper">
+                            <div class="capacity-header">
+                                <span>Density Meter</span>
+                                <span id="capacityPercent">0%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div id="capacityFill" class="progress-fill safe" style="width: 0%;"></div>
+                            </div>
+                            <div class="capacity-scale">
+                                <span>0</span>
+                                <span>5 (Warning)</span>
+                                <span>10+ (Critical)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Crowd Safety State -->
+                <div class="card stat-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="card-icon alert-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            </span>
+                            <div>
+                                <h3>Crowd Status</h3>
+                                <p class="card-meta">Automated Safety Level</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-body centered-metric">
+                        <div id="crowdStatus" class="badge status-pill safe">SAFE</div>
+                        <p id="crowdStatusDesc" class="status-explanation">Facility occupancy is well within safety thresholds.</p>
+                    </div>
+                </div>
+
+                <!-- Automated Gate Servo -->
+                <div class="card stat-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="card-icon gate-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            </span>
+                            <div>
+                                <h3>Gate Barrier State</h3>
+                                <p class="card-meta">Servo Motor GPIO 10</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-body centered-metric">
+                        <div id="gateStatus" class="badge status-pill gate-open">OPEN</div>
+                        <p id="gateStatusDesc" class="status-explanation">Turnstile barrier is unlatched for safe passage.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Detailed Sensor Matrix -->
+            <section class="section-container">
+                <div class="section-header">
+                    <h2>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        Telemetry & Sensor Array
+                    </h2>
+                    <span class="refresh-indicator">
+                        <span class="pulse-ring"></span>
+                        Auto-refresh: 2000ms
+                    </span>
+                </div>
+
+                <div class="sensor-grid">
+                    <!-- FSR 402 Card -->
+                    <div class="card sensor-card">
+                        <div class="sensor-header">
+                            <div class="sensor-badge real">REAL SENSOR • GPIO 5</div>
+                            <div class="sensor-icon fsr">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                            </div>
+                        </div>
+                        <div class="sensor-name">FSR 402 Force Resistor</div>
+                        <div class="sensor-reading">
+                            <span id="fsr" class="value mono">-</span>
+                            <span class="unit">ADC (0-4095)</span>
+                        </div>
+                        <div class="mini-meter">
+                            <div class="meter-bar">
+                                <div id="fsrMeter" class="meter-fill" style="width: 10%;"></div>
+                            </div>
+                            <div class="meter-labels">
+                                <span>No Contact</span>
+                                <span>High Pressure</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- IR Sensor Card -->
+                    <div class="card sensor-card">
+                        <div class="sensor-header">
+                            <div class="sensor-badge real">REAL SENSOR • GPIO 4</div>
+                            <div class="sensor-icon ir">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </div>
+                        </div>
+                        <div class="sensor-name">Optical Beam / IR Obstacle</div>
+                        <div class="sensor-reading">
+                            <span id="ir" class="value mono">-</span>
+                        </div>
+                        <div class="sensor-footer">
+                            <span id="irIndicator" class="indicator-chip clear">
+                                <span class="dot"></span> Beam Pathway Clear
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- HC-SR04 Ultrasonic Card -->
+                    <div class="card sensor-card">
+                        <div class="sensor-header">
+                            <div class="sensor-badge real">REAL SENSOR • GPIO 11/12</div>
+                            <div class="sensor-icon sonar">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.93 4.93a10 10 0 0 1 14.14 0"/><path d="M7.76 7.76a6 6 0 0 1 8.48 0"/><circle cx="12" cy="12" r="2"/></svg>
+                            </div>
+                        </div>
+                        <div class="sensor-name">HC-SR04 Ultrasonic Distance</div>
+                        <div class="sensor-reading">
+                            <span id="distance" class="value mono">-</span>
+                        </div>
+                        <div class="sensor-footer">
+                            <span class="tech-detail">Soundwave Time-of-Flight</span>
+                        </div>
+                    </div>
+
+                    <!-- HX711 Weight Card -->
+                    <div class="card sensor-card simulated">
+                        <div class="sensor-header">
+                            <div class="sensor-badge demo">SIMULATED / DEMO</div>
+                            <div class="sensor-icon weight">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="m5 6 7-3 7 3"/><path d="M6 10a5 5 0 0 0 5 5h2a5 5 0 0 0 5-5"/></svg>
+                            </div>
+                        </div>
+                        <div class="sensor-name">Platform Weight Sensor</div>
+                        <div class="sensor-reading">
+                            <span id="weight" class="value mono">- g</span>
+                        </div>
+                        <div class="sensor-footer">
+                            <span class="simulated-tag">HX711 Fixed Benchmark Value</span>
+                        </div>
+                    </div>
+
+                    <!-- MPU6050 Gyro/Accel Card -->
+                    <div class="card sensor-card simulated">
+                        <div class="sensor-header">
+                            <div class="sensor-badge demo">SIMULATED / DEMO</div>
+                            <div class="sensor-icon mpu">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                            </div>
+                        </div>
+                        <div class="sensor-name">MPU6050 6-Axis Motion</div>
+                        <div class="sensor-reading">
+                            <span id="mpu" class="value mono">-</span>
+                        </div>
+                        <div class="sensor-footer">
+                            <span class="simulated-tag">Inertial Measurement Unit Benchmark</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Diagnostics & Hardware Metadata Strip -->
+            <footer class="system-footer card">
+                <div class="diag-group">
+                    <div class="diag-item">
+                        <span class="diag-label">Edge Node Architecture</span>
+                        <span class="diag-val">ESP32-S3 Dual-Core (Wi-Fi STA)</span>
+                    </div>
+                    <div class="diag-item">
+                        <span class="diag-label">Ingestion API Protocol</span>
+                        <span class="diag-val">REST JSON via HTTP POST :3000</span>
+                    </div>
+                    <div class="diag-item">
+                        <span class="diag-label">Heartbeat Cycle</span>
+                        <span class="diag-val">5000ms Stale Watchdog</span>
+                    </div>
+                    <div class="diag-item highlight">
+                        <span class="diag-label">Last Transmission</span>
+                        <span id="lastUpdated" class="diag-val mono">-</span>
+                    </div>
+                </div>
+            </footer>
+        </main>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
