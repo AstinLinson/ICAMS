@@ -74,12 +74,16 @@ const elems = {
 // ===================================================================
 // Voice Announcement System (Web Speech API)
 // ===================================================================
+let isSpeaking = false;
 let lastVoiceBroadcastTime = 0;
 let lastAnnouncedCase = null;
-const VOICE_COOLDOWN_MS = 12000; // Repeat announcement at most once every 12 seconds if condition persists
+const VOICE_COOLDOWN_MS = 14000; // Allow complete sentence (~4s) + comfortable pause before repeating
 
 function speakAnnouncement(phrase, forced = false) {
   if (!('speechSynthesis' in window)) return;
+
+  // Never interrupt an ongoing announcement unless explicitly forced by button
+  if (isSpeaking && !forced) return;
 
   // Update banner message if present
   const paMsgElem = document.getElementById('paAlertMessage');
@@ -93,16 +97,39 @@ function speakAnnouncement(phrase, forced = false) {
     clearTimeout(elems.paAlertBannerTimeout);
     elems.paAlertBannerTimeout = setTimeout(() => {
       elems.paAlertBanner.style.display = 'none';
-    }, 7000);
+    }, 8500);
   }
 
-  // Cancel any ongoing speech so the announcement plays immediately
-  window.speechSynthesis.cancel();
+  // Workaround for Chrome speech synthesis bug: ensure synthesis is unpaused
+  window.speechSynthesis.resume();
+
+  // Only cancel if user manually clicked test button
+  if (forced) {
+    window.speechSynthesis.cancel();
+  }
 
   const utterance = new SpeechSynthesisUtterance(phrase);
   utterance.rate = 0.95; // Authoritative, crisp Public Address pace
   utterance.pitch = 1.0;
   utterance.volume = 1.0;
+
+  // Prevent Chrome GC bug from terminating speech prematurely
+  window._currentUtterance = utterance;
+
+  utterance.onstart = () => {
+    isSpeaking = true;
+  };
+
+  utterance.onend = () => {
+    isSpeaking = false;
+    window._currentUtterance = null;
+  };
+
+  utterance.onerror = (err) => {
+    console.warn('SpeechSynthesis error:', err);
+    isSpeaking = false;
+    window._currentUtterance = null;
+  };
 
   // Prefer English locale voice if available
   const voices = window.speechSynthesis.getVoices();
@@ -113,8 +140,8 @@ function speakAnnouncement(phrase, forced = false) {
 }
 
 // Multi-sensor Voice Logic:
-// 1. FSR > 1000 & IR DETECTED -> "Exit 1 is crowded and the crowd is moving down, so everybody use Exit 2."
-// 2. FSR > 1000 & IR NOT DETECTED -> "The crowd is not moving, and it is very crowded as well there, so everybody use Exit 2."
+// 1. FSR > 1000 & IR DETECTED -> "Exit 1 is crowded and the crowd is moving down, so everybody please use Exit 2."
+// 2. FSR > 1000 & IR NOT DETECTED -> "The crowd is not moving, and it is very crowded as well there, so everybody please use Exit 2."
 // 3. FSR <= 1000 & IR DETECTED -> QUIET
 // 4. FSR <= 1000 & IR NOT DETECTED -> QUIET
 function handleCrowdVoiceLogic(fsrVal, isIrDetected) {
@@ -125,11 +152,11 @@ function handleCrowdVoiceLogic(fsrVal, isIrDetected) {
     if (isIrDetected) {
       // Case 1: High pressure on Exit 1, crowd actively moving across IR beam
       currentCase = 'CASE_1_MOVING';
-      phrase = "Exit 1 is crowded and the crowd is moving down, so everybody use Exit 2.";
+      phrase = "Exit 1 is crowded and the crowd is moving down, so everybody please use Exit 2.";
     } else {
       // Case 2: High pressure on Exit 1, NO movement across IR beam (stagnant / jam)
       currentCase = 'CASE_2_STAGNANT';
-      phrase = "The crowd is not moving, and it is very crowded as well there, so everybody use Exit 2.";
+      phrase = "The crowd is not moving, and it is very crowded as well there, so everybody please use Exit 2.";
     }
   } else {
     // Case 3 & 4: FSR <= 1000 -> Completely QUIET
@@ -138,12 +165,15 @@ function handleCrowdVoiceLogic(fsrVal, isIrDetected) {
     return;
   }
 
+  // If audio is actively speaking, let the sentence finish completely
+  if (isSpeaking) return;
+
   const now = Date.now();
-  // Announce if new state occurred OR if 12s cooldown has elapsed
+  // Announce if new state occurred OR if 14s cooldown has elapsed
   if (currentCase !== lastAnnouncedCase || (now - lastVoiceBroadcastTime >= VOICE_COOLDOWN_MS)) {
     lastAnnouncedCase = currentCase;
     lastVoiceBroadcastTime = now;
-    speakAnnouncement(phrase, true);
+    speakAnnouncement(phrase, false);
   }
 }
 
